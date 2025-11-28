@@ -1,3 +1,9 @@
+import uuid
+import tempfile
+import os, redis
+from django.conf import settings
+from celery.result import AsyncResult
+
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework import generics, filters
@@ -5,13 +11,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import Product
 from .serializers import ProductSerializer
+from .pagination import ProductPagination
+
+
 from webhooks.tasks import trigger_event_webhook
 from .tasks import import_csv_task
-import uuid
-import tempfile
-import os, redis
-from django.conf import settings
-from celery.result import AsyncResult
 
 # Create your views here.
 class ImportView(APIView):
@@ -50,11 +54,27 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['sku', 'name', 'description']
+    pagination_class = ProductPagination
 
 
     def perform_create(self, serializer):
         product = serializer.save()
         trigger_event_webhook(event="product.created", payload={"product": ProductSerializer(product).data})
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        sku = self.request.query_params.get("sku")
+        name = self.request.query_params.get("name")
+        active = self.request.query_params.get("active")
+
+        if sku:
+            qs = qs.filter(sku__icontains=sku)
+        if name:
+            qs = qs.filter(name__icontains=name)
+        if active is not None:
+            qs = qs.filter(active=active.lower() == "true")
+
+        return qs
 
 
 class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
