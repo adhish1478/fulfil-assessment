@@ -12,3 +12,6 @@ class Webhook(models.Model):
     event = models.CharField(max_length=64, choices=EVENT_CHOICES)
     enabled = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Webhook {self.id} - {self.event} - {'Enabled' if self.enabled else 'Disabled'}"
