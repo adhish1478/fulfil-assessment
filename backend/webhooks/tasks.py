@@ -29,3 +29,11 @@ def trigger_event_webhook(event, payload):
     matches= Webhook.objects.filter(event= event, enabled= True)
     for wh in matches:
         send_webhook.apply_async((wh.id, event, payload), queue='webhooks')
+
+@shared_task
+def deliver_webhook(url, payload):
+    try:
+        r = requests.post(url, json=payload, timeout=5)
+        return {"status": r.status_code, "response": r.text}
+    except Exception as e:
+        return {"error": str(e)}
