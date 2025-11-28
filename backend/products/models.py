@@ -5,7 +5,7 @@ import uuid
 class Product(models.Model):
     id= models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sku= models.CharField(max_length=100, help_text="Original SKU of the product")
-    sku_norm= models.CharField(max_length=100, 
+    sku_lower= models.CharField(max_length=100, 
                                unique=True,
                                db_index=True,
                                help_text="Normalized SKU of the product")
@@ -18,7 +18,7 @@ class Product(models.Model):
     class Meta:
         db_table = 'products'
         indexes = [
-            models.Index(fields=['sku_norm']),
+            models.Index(fields=['sku_lower']),
             models.Index(fields=['active']),
             models.Index(fields=['-created_at']),
         ]
@@ -29,5 +29,5 @@ class Product(models.Model):
     def __save__(self, *args, **kwargs):
         # Normalize the SKU before saving
         if self.sku:
-            self.sku_norm = self.sku.strip().lower()
+            self.sku_lower = self.sku.strip().lower()
         super().save(*args, **kwargs)
