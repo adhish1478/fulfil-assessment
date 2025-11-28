@@ -1,8 +1,11 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework import generics, filters
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Product
+from .serializers import ProductSerializer
+from webhooks.tasks import trigger_event_webhook
 from .tasks import import_csv_task
 import uuid
 import tempfile
@@ -41,3 +44,31 @@ class ImportStatusCheckView(APIView):
             return Response({"error": "Job ID not found or expired"}, status= status.HTTP_404_NOT_FOUND)
 
         return Response(eval(raw), status= status.HTTP_200_OK)
+
+class ProductListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Product.objects.all().order_by('id')
+    serializer_class = ProductSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['sku', 'name', 'description']
+
+
+    def perform_create(self, serializer):
+        product = serializer.save()
+        trigger_event_webhook(event="product.created", payload={"product": ProductSerializer(product).data})
+
+
+class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+    lookup_field = 'sku_lower'
+    lookup_url_kwarg = 'sku'
+
+
+    def perform_update(self, serializer):
+        product = serializer.save()
+        trigger_event_webhook(event="product.updated", payload={"product": ProductSerializer(product).data})
+
+    def perform_destroy(self, instance):
+        payload = {"product": ProductSerializer(instance).data}
+        trigger_event_webhook(event="product.deleted", payload=payload)
+        instance.delete()
