@@ -23,7 +23,16 @@ def import_csv_task(self, upload_id, file_path, chunk_size= 5000):
     # state initialization
     def set_progress(status, processed, total, message= ""):
         percent= int((processed / total) * 100) if total else 0
-        payload= {
+
+        if status == "COMPLETED":
+            percent = 100
+        elif total > 0:
+            # Cap at 99% until COMPLETED to avoid premature UI stop
+            percent = min(99, int((processed / total) * 100))
+        else:
+            percent = 0
+        
+        payload = {
             "job_id": upload_id,
             "status": status,
             "percent": percent,
@@ -31,7 +40,7 @@ def import_csv_task(self, upload_id, file_path, chunk_size= 5000):
             "total_rows": total,
             "message": message
         }
-        r.set(f"import : {upload_id}", str(payload), ex= 24*3600)  # expires in 24 hours
+        r.set(f"import : {upload_id}", str(payload), ex=24*3600)
 
     set_progress("PARSING", 0, 0, "Opening file")
     processed= 0

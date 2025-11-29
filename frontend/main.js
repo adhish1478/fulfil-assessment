@@ -139,8 +139,7 @@ function startPollingProgress(jobId) {
       if (uploadPercent) uploadPercent.textContent = safePct + "% completed";
       uploadDetails.textContent = data.message || "";
 
-      // ONLY stop polling when status is explicitly COMPLETED
-      // Do NOT stop just because percent reaches 100
+      // ONLY stop when status is explicitly COMPLETED
       if (typeof data.status === "string" && data.status.toUpperCase() === "COMPLETED") {
         stopPolling();
         uploadProgress.style.width = "100%";
