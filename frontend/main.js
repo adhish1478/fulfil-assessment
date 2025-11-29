@@ -1,7 +1,7 @@
 // main.js - Frontend for Product Importer
 // Configure your API base URL here:
-const API_BASE = (window.API_BASE || '').replace(/\/$/, '') || "http://localhost:8000/api";
-
+//const API_BASE = (window.API_BASE || '').replace(/\/$/, '') || "http://localhost:8000/api";
+const API_BASE = 'http://34.100.164.253:8000/api';
 //
 // Simple API helpers
 //
