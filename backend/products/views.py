@@ -27,13 +27,18 @@ class ImportView(APIView):
         if not upload_file:
             return Response({"error": "No file uploaded"}, status= status.HTTP_400_BAD_REQUEST)
         
-        temp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv")
-        for chunk in upload_file.chunks():
-            temp.write(chunk)
-        temp.close()
-        print(temp.name)
+        upload_dir = settings.UPLOAD_TMP_DIR
+        os.makedirs(upload_dir, exist_ok=True)
+
+        filename = f"{uuid.uuid4()}.csv"   # ensures unique safe name
+        file_path = os.path.join(upload_dir, filename)
+
+        with open(file_path, "wb") as out:
+            for chunk in upload_file.chunks():
+                out.write(chunk)
+        print(file_path)
         job_id= str(uuid.uuid4())
-        import_csv_task.delay(job_id, temp.name)
+        import_csv_task.delay(job_id, file_path)
 
         return Response({"message": "Import started","job_id": job_id}, status= status.HTTP_202_ACCEPTED)
 
