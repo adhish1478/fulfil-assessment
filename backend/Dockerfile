@@ -1,18 +1,20 @@
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-
 WORKDIR /app
 
-COPY backend/requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip && pip install -r /app/requirements.txt
+# System deps
+RUN apt-get update && apt-get install -y build-essential libpq-dev
 
-# copy entire backend source
-COPY backend /app/backend
+# Copy requirements
+COPY requirements.txt .
 
-WORKDIR /app/backend
+RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PATH="/root/.local/bin:$PATH"
+# Copy backend
+COPY . .
 
-# collect static optionally; entrypoint is gunicorn or celery in docker-compose
+# Expose Django port
+EXPOSE 8000
+
+# Gunicorn entry
+CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

@@ -1,52 +1,42 @@
-version: "3.8"
 services:
   db:
-    image: postgres:15
+    image: postgres:16-alpine
     environment:
-      POSTGRES_DB: appdb
-      POSTGRES_USER: appuser
-      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - backend_pgdata:/var/lib/postgresql/data
 
   redis:
     image: redis:7
-    ports:
-      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
 
   web:
     build: .
-    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000
-    volumes:
-      - ./backend:/app/backend
     env_file: .env
+    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000 --workers 2
     ports:
       - "8000:8000"
     depends_on:
       - db
       - redis
-
-  celery:
-    build: .
-    command: celery -A backend worker -Q default,webhooks -n worker.%h
     volumes:
-      - ./backend:/app/backend
+      - .:/app
+      - shared_tmp:/app/tmp
+
+  worker:
+    build: .
     env_file: .env
+    command: celery -A backend worker -l info
     depends_on:
+      - web
       - redis
       - db
-
-  celery_import:
-    build: .
-    command: celery -A backend worker -Q imports -n importworker.%h
     volumes:
-      - ./backend:/app/backend
-    env_file: .env
-    depends_on:
-      - redis
-      - db
+      - .:/app
+      - shared_tmp:/app/tmp
 
 volumes:
-  postgres-data:
+  backend_pgdata:
+  shared_tmp:
