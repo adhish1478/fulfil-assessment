@@ -39,12 +39,8 @@ def import_csv_task(self, upload_id, file_path, chunk_size= 5000):
 
     # count total rows
     with open(file_path, "r", encoding= "utf-8") as f:
-        for _ in f:
-            total_rows += 1
-    # subtract header if exists
-    # assumeing first row is header
-    if total_rows > 0:
-        total_rows -= 1
+        reader = csv.DictReader(f)
+        total_rows = sum(1 for row in reader if any(row.values()))
 
     set_progress("PARSING", processed, total_rows, "Starting Processing")
 
