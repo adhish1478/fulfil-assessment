@@ -117,7 +117,6 @@ uploadBtn.addEventListener("click", async () => {
     currentJob = data.job_id;
     uploadStage.textContent = "Queued — processing started";
     startPollingProgress(currentJob);
-    cancelUploadBtn.classList.remove("hidden");
     showNotification("Upload started. Tracking progress...");
   } catch (err) {
     console.error(err);
@@ -145,7 +144,6 @@ function startPollingProgress(jobId) {
       // Stop polling if completed or percent hits 100
       if ((typeof data.status === "string" && data.status.toUpperCase() === "COMPLETED") || safePct >= 100) {
         stopPolling();
-        cancelUploadBtn.classList.add("hidden");
         if (uploadPercent) uploadPercent.textContent = "100% completed";
 
         if (typeof data.status === "string" && data.status.toUpperCase() === "COMPLETED") {
@@ -453,7 +451,6 @@ webhookForm.addEventListener("submit", async (ev) => {
       showNotification("Webhook updated", "success");
     } else {
       await apiFetch(`/webhooks/`, { method: "POST", body: { url, event, enabled }});
-      notifications.className.add("bg-amber-500")
       showNotification("Webhook created", "success");
     }
     closeWebhookModal();
