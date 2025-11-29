@@ -132,27 +132,21 @@ function startPollingProgress(jobId) {
     try {
       const data = await apiFetch(`/imports/status/${jobId}/`);
 
-      // backend returns: { status: "...", percent: n, message: "...", ... }
       const pct = Number(data.percent ?? 0);
-      // defensive clamp and NaN handling
       const safePct = Number.isFinite(pct) ? Math.max(0, Math.min(100, pct)) : 0;
 
       uploadProgress.style.width = safePct + "%";
       if (uploadPercent) uploadPercent.textContent = safePct + "% completed";
       uploadDetails.textContent = data.message || "";
 
-      // Stop polling if completed or percent hits 100
-      if ((typeof data.status === "string" && data.status.toUpperCase() === "COMPLETED") || safePct >= 100) {
+      // ONLY stop polling when status is explicitly COMPLETED
+      // Do NOT stop just because percent reaches 100
+      if (typeof data.status === "string" && data.status.toUpperCase() === "COMPLETED") {
         stopPolling();
+        uploadProgress.style.width = "100%";
         if (uploadPercent) uploadPercent.textContent = "100% completed";
-
-        if (typeof data.status === "string" && data.status.toUpperCase() === "COMPLETED") {
-          uploadResult.innerHTML = `<div class="text-sm text-green-700">Import completed successfully.</div>`;
-          showNotification("Import completed", "success");
-        } else {
-          uploadResult.innerHTML = `<div class="text-sm text-red-700">Import ended with status: ${data.status}</div>`;
-          showNotification("Import ended unexpectedly", "error");
-        }
+        uploadResult.innerHTML = `<div class="text-sm text-green-700">Import completed successfully.</div>`;
+        showNotification("Import completed", "success");
       }
 
     } catch (e) {
