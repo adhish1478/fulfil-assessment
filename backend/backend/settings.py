@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-7fces@gk)a*$k7o%^9hqi-q(s0@g(ht_(!jp468kjve&j4j$tv'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -39,12 +39,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'products',
-    'webhooks',
-    'rest_framework',
+    'products', # our products app
+    'webhooks', # our webhooks app
+    'rest_framework', # Django REST framework
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # for handling CORS
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -142,3 +144,6 @@ CELERY_TASK_SOFT_TIME_LIMIT = 1200   # 20 minutes
 CELERY_TASK_TIME_LIMIT = 1800        # 30 minutes
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 10   # Prevent memory leaks
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1    # Stability
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True

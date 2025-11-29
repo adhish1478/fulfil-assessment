@@ -50,7 +50,7 @@ class ImportStatusCheckView(APIView):
         return Response(eval(raw), status= status.HTTP_200_OK)
 
 class ProductListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Product.objects.all().order_by('id')
+    queryset = Product.objects.all().order_by('created_at')
     serializer_class = ProductSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['sku', 'name', 'description']
@@ -59,36 +59,45 @@ class ProductListCreateAPIView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         product = serializer.save()
-        trigger_event_webhook(event="product.created", payload={"product": ProductSerializer(product).data})
+        trigger_event_webhook("product.created", {"product": ProductSerializer(product).data})
 
     def get_queryset(self):
         qs = super().get_queryset()
         sku = self.request.query_params.get("sku")
         name = self.request.query_params.get("name")
+        description = self.request.query_params.get("description")
         active = self.request.query_params.get("active")
 
         if sku:
             qs = qs.filter(sku__icontains=sku)
         if name:
             qs = qs.filter(name__icontains=name)
+        if description:
+            qs = qs.filter(description__icontains=description)
         if active is not None:
             qs = qs.filter(active=active.lower() == "true")
 
         return qs
 
+    def delete(self, request, *args, **kwargs):
+        deleted, _ = Product.objects.all().delete()
+        return Response(
+            {"message": f"Deleted {deleted} products"},
+            status=status.HTTP_200_OK
+        )
+
 
 class ProductRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    lookup_field = 'sku_lower'
-    lookup_url_kwarg = 'sku'
+    lookup_field = 'id'
 
 
     def perform_update(self, serializer):
         product = serializer.save()
-        trigger_event_webhook(event="product.updated", payload={"product": ProductSerializer(product).data})
+        trigger_event_webhook("product.updated", {"product": ProductSerializer(product).data})
 
     def perform_destroy(self, instance):
         payload = {"product": ProductSerializer(instance).data}
-        trigger_event_webhook(event="product.deleted", payload=payload)
+        trigger_event_webhook("product.deleted", payload)
         instance.delete()

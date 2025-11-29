@@ -92,7 +92,7 @@ def import_csv_task(self, upload_id, file_path, chunk_size= 5000):
     set_progress("COMPLETED", processed, total_rows, "Import completed successfully")
 
     # trigger webhook for import completion
-    trigger_event_webhook.delay(event= "product.import.completed", payload= {
+    trigger_event_webhook.delay("product.import.completed", {
         "job_id": upload_id,
         "total_rows": total_rows,
     })
@@ -129,6 +129,6 @@ def process_chunk(rows):
             ))
     
     if to_create:
-        Product.objects.bulk_create(to_create, batch_size= 1000)
+        Product.objects.bulk_create(to_create, batch_size= 10000)
     if to_update:
         Product.objects.bulk_update(to_update, fields= ['name', 'description', 'active'], batch_size= 1000)
