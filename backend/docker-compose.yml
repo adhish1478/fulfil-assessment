@@ -1,0 +1,52 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: changeme
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    command: gunicorn backend.wsgi:application --bind 0.0.0.0:8000
+    volumes:
+      - ./backend:/app/backend
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  celery:
+    build: .
+    command: celery -A backend worker -Q default,webhooks -n worker.%h
+    volumes:
+      - ./backend:/app/backend
+    env_file: .env
+    depends_on:
+      - redis
+      - db
+
+  celery_import:
+    build: .
+    command: celery -A backend worker -Q imports -n importworker.%h
+    volumes:
+      - ./backend:/app/backend
+    env_file: .env
+    depends_on:
+      - redis
+      - db
+
+volumes:
+  postgres-data:
